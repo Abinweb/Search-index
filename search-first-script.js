@@ -1,4 +1,4 @@
-  // Generate or get visitor ID
+   // Generate or get visitor ID
 async function getOrCreateVisitorId() {
     let visitorId = localStorage.getItem('visitorId');
     if (!visitorId) {
@@ -139,6 +139,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 navigateToSearchResults(currentQuery, input);
             });
         }
+
+        // === Add search icon container click handler (same as View All) ===
+        const searchIconContainer = document.querySelector(".searchIcon-Container");
+        if (searchIconContainer) {
+            searchIconContainer.style.cursor = "pointer";
+            searchIconContainer.addEventListener("click", () => {
+                const latestQuery = input.value.trim();
+                navigateToSearchResults(latestQuery, input);
+            });
+        }
         
         // Inject styles dynamically for suggestions
         function sanitizeText(text) {
@@ -184,6 +194,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             .searchsuggestionbox .suggestion-item:hover {
                 background-color: #eee;
+            }
+            .searchsuggestionbox .suggestion-item:focus,
+            .searchsuggestionbox .suggestion-item[aria-selected="true"] {
+                outline: none;
+                background-color: #e6f0ff;
             }
             
             .searchsuggestionbox .view-all-link {
@@ -231,19 +246,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     suggestionBox.innerHTML = data.suggestions
                         .map((s, i) => {
                             const cleanText = sanitizeText(s);
-                            const displayText = toTitleCase(cleanText); // consistent styling
-                            // SIMPLIFIED URL - only include query parameter
+                            const displayText = toTitleCase(cleanText);
                             const url = `/search-app-results?q=${encodeURIComponent(cleanText)}`;
-                            return `<div class="suggestion-item" data-url="${url}">${displayText}</div>`;
+                            // tabindex makes items reachable via Tab; role for a11y
+                            return `<div class="suggestion-item" role="option" tabindex="0" data-url="${url}" data-query="${encodeURIComponent(cleanText)}">${displayText}</div>`;
                         })
                         .join("");
 
-                    suggestionBox.querySelectorAll('.suggestion-item').forEach(item => {
+                    const suggestionItems = suggestionBox.querySelectorAll('.suggestion-item');
+                    suggestionItems.forEach(item => {
                         item.addEventListener('click', () => {
                             const url = item.getAttribute("data-url");
                             window.location.href = url;
                         });
+                        // Allow selecting with Enter/Space when focused
+                        item.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                const url = item.getAttribute('data-url');
+                                window.location.href = url;
+                            }
+                        });
                     });
+
+                    // Keyboard navigation from the input
+                    input.addEventListener('keydown', (e) => {
+                        if ((e.key === 'ArrowDown' || e.key === 'Tab') && suggestionItems.length > 0) {
+                            // Move focus to the first suggestion
+                            suggestionItems[0].focus();
+                            e.preventDefault();
+                        }
+                    }, { once: true });
                     
                     // "View All" link
                     const viewAllLink = document.createElement("div");
@@ -277,6 +310,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.error("Failed to fetch suggestions:", err);
                 suggestionBox.style.display = "none";
                 suggestionBox.innerHTML = "";
+            }
+        });
+
+        // Roving focus between suggestion items with ArrowUp/ArrowDown and Tab/Shift+Tab
+        suggestionBox.addEventListener('keydown', (e) => {
+            const items = Array.from(suggestionBox.querySelectorAll('.suggestion-item'));
+            if (items.length === 0) return;
+
+            const currentIndex = items.findIndex(el => el === document.activeElement);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                const nextIndex = (currentIndex + 1) % items.length;
+                items[nextIndex].focus();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                items[prevIndex].focus();
+            } else if (e.key === 'Escape') {
+                suggestionBox.style.display = 'none';
+                input.focus();
             }
         });
     }
