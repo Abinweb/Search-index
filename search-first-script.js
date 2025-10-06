@@ -1,4 +1,4 @@
-   // Generate or get visitor ID
+     // Generate or get visitor ID
 async function getOrCreateVisitorId() {
     let visitorId = localStorage.getItem('visitorId');
     if (!visitorId) {
@@ -197,14 +197,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             .searchsuggestionbox .suggestion-item:hover {
-                background-color: #eee;
+                background-color: #f3f8ff; /* lighter hover */
             }
             .searchsuggestionbox .suggestion-item:focus,
             .searchsuggestionbox .suggestion-item[aria-selected="true"] {
-                outline: 2px solid #0073e6; /* strong visible outline for keyboard focus */
-                background-color: #e6f0ff;
-                border-color: #0073e6;
-                box-shadow: 0 0 0 2px rgba(0,115,230,0.25);
+                outline: none !important; /* suppress default thin focus line */
+                background-color: #eaf2ff !important; /* much lighter active */
+                color: #111111 !important; /* readable on light bg */
+                border-color: #bcd6ff !important; /* subtle border */
+                box-shadow: 0 0 0 2px rgba(13,110,253,0.15) !important; /* softer glow */
+            }
+            .searchsuggestionbox .suggestion-item:focus-visible {
+                outline: none !important;
             }
             
             .searchsuggestionbox .view-all-link {
@@ -226,6 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!suggestionBox) {
             suggestionBox = document.createElement("div");
             suggestionBox.className = "searchsuggestionbox";
+            suggestionBox.setAttribute('role', 'listbox');
             input.parentNode.style.position = "relative";
             input.parentNode.appendChild(suggestionBox);
         }
@@ -272,6 +277,14 @@ document.addEventListener('DOMContentLoaded', function () {
                                 const url = item.getAttribute('data-url');
                                 window.location.href = url;
                             }
+                        });
+                        item.addEventListener('focus', () => {
+                            suggestionItems.forEach(i => i.setAttribute('aria-selected', 'false'));
+                            item.setAttribute('aria-selected', 'true');
+                            item.scrollIntoView({ block: 'nearest' });
+                        });
+                        item.addEventListener('blur', () => {
+                            item.setAttribute('aria-selected', 'false');
                         });
                     });
 
