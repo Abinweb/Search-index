@@ -140,15 +140,19 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // === Add search icon container click handler (same as View All) ===
-        const searchIconContainer = document.querySelector(".searchIcon-Container");
-        if (searchIconContainer) {
-            searchIconContainer.style.cursor = "pointer";
-            searchIconContainer.addEventListener("click", () => {
+        // === Add search trigger click handlers (same as View All)
+        // Use delegated handler to cover late-inserted elements
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+            // Support new button id `#search-input` and legacy classes
+            const trigger = target.closest('#search-input, .searchIcon-Container, .searchiconcontainer');
+            if (trigger) {
+                e.preventDefault();
                 const latestQuery = input.value.trim();
                 navigateToSearchResults(latestQuery, input);
-            });
-        }
+            }
+        });
         
         // Inject styles dynamically for suggestions
         function sanitizeText(text) {
@@ -187,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 font-family: 'Inter', 'Arial', sans-serif !important;
                 line-height: 1.4;
                 background: white !important;
-                border: none !important;
+                border: 1px solid transparent !important; /* base border so focus state is visible */
                 text-transform: capitalize !important;
                 white-space: normal;
             }
@@ -197,8 +201,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             .searchsuggestionbox .suggestion-item:focus,
             .searchsuggestionbox .suggestion-item[aria-selected="true"] {
-                outline: none;
+                outline: 2px solid #0073e6; /* strong visible outline for keyboard focus */
                 background-color: #e6f0ff;
+                border-color: #0073e6;
+                box-shadow: 0 0 0 2px rgba(0,115,230,0.25);
             }
             
             .searchsuggestionbox .view-all-link {
